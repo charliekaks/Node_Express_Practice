@@ -1,9 +1,7 @@
-
 const express = require('express');
 const bookRouter = express.Router();
-
-const books = [
-    {
+const sql = require("mssql");
+const books = [{
         "isbn": "9781593275846",
         "title": "Eloquent JavaScript, Second Edition",
         "subtitle": "A Modern Introduction to Programming",
@@ -95,15 +93,43 @@ const books = [
 
 bookRouter.route('/')
     .get((req, res) => {
-        res.render('books', { nav: [{ title: "Books", link: 'books' }, { title: 'Author', link: 'author' }],books });
+        (async function query(){
+            const request = new sql.Request();
+            const {recordset} = await request.query('SELECT * FROM books')
+                    res.render('books', {
+                        nav: [{
+                            title: "Books",
+                            link: 'books'
+                        }, {
+                            title: 'Author',
+                            link: 'author'
+                        }],
+                        books:recordset
+                    });
+        }());
+              
     })
 
 
-bookRouter.route('/:isbn')
-    .get((req,res)=>{
-        const {isbn} = req.params;
-        res.render('book', { nav: [{ title: "Books", link: 'books' }, { title: 'Author', link: 'author' }], book : books[isbn] });      
-
-    })
+bookRouter.route('/:id')
+    .get((req, res) => {
+        const {id} = req.params;
+        (async function query(){
+            const request = new sql.Request();
+            const {recordset}= await request
+            .input('id',sql.Int,id)
+            .query('SELECT * FROM books WHERE id = @id');
+            res.render('book', {
+                nav: [{
+                    title: "Books",
+                    link: 'books'
+                }, {
+                    title: 'Author',
+                    link: 'author'
+                }],
+                book: recordset[0]
+            });
+        }());
+     })
 
 module.exports = bookRouter;
